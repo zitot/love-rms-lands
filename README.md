@@ -1,6 +1,6 @@
 # love-rms-lands
 
-scenario like editor for land generation
+scenario like editor for land generation... it's going to be more like paint than an actual editor, and even calling it paint is pushing it. something more primitive?
 
 currently just a mockup of a ui and scrollable map
 
