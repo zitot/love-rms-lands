@@ -1,10 +1,12 @@
-require "map"
+local rms = require "map"
+local ui = require "ui"
 
 local MAPSIZE = 10 -- size of the map
 local tiles = {} -- table to store the tiles
 local tileSize = 32 -- size of each tile in pixels
 local angle = math.rad(-45) -- angle to rotate the map
 
+local special_text_to_draw_in_top_left_corner = ""
 
 local brush_terrain_type = "GRASS"
 local brush_base_size = 1
@@ -151,19 +153,6 @@ local function drawMap()
             love.graphics.setColor(1,1,1)
             local sprite = TERRAIN_SPRITES[terrain_type]
             love.graphics.draw(sprite, x, y)
-
-            -- love.graphics.push()
-            -- love.graphics.translate(x + tileSize / 2, y + tileSize / 2)
-            -- love.graphics.rotate(-angle)
-            -- love.graphics.setColor(1, 1, 1)
-            -- local textX = cameraX
-            -- local textY = cameraY
-            -- textX = x + (tileSize / 2) - 3
-            -- textY = y + (tileSize / 2) - 6
-            -- love.graphics.print(tiles[i][j].substring, -3, -6)
-            -- table.insert(textElements, {x = textX, y = textY, substring = tiles[i][j].substring})
-            -- love.graphics.pop()
-
         end
     end
 
@@ -209,27 +198,47 @@ local function drawMap()
 
 
     love.graphics.pop()
-
-    -- for i = 1, #textElements do
-        -- love.graphics.print(textElements[i].substring, textElements[i].x, textElements[i].y)
-    -- end
     love.graphics.setCanvas() -- reset active drawing target to screen
-
 end
 
 local function paintTile(row,col)
     -- paint the tile at row,col
     -- will overwrite neighboring tiles
-    neighbors = MAPSIZE
+    neighbors = MAPSIZE --TODO: ?
 end
+
+local function getTileAtCursor(x, y, button)
+    local x = x - cameraX
+    local y = y - cameraY
+    local c = math.cos(-angle)
+    local s = math.sin(-angle)
+
+    x, y = c * x - s * y, s * x + c * y
+
+    -- 
+    local i = math.floor(x / tileSize + MAPSIZE / 2) 
+    local j = math.floor(y / tileSize + MAPSIZE / 2) 
+
+    -- if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
+    --     special_text_to_draw_in_top_right_corner = tiles[i][j].terrain_type ..
+    --      "\nx:" .. i .. "\ny:" .. j 
+    --     -- tiles[i][j].substring = string.char(math.random(65, 90))
+    -- end
+    if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
+        return i, j
+    end
+end
+
+local isDragging = false
+local startX, startY
 
 -- function to handle touches and clicks
 local function handleTouch(x, y)
     -- x = x - love.graphics.getWidth() / 2
     -- y = y - love.graphics.getHeight() / 2
 
-    x = x - cameraX
-    y = y - cameraY
+    local x = x - cameraX
+    local y = y - cameraY
 
 
 
@@ -238,34 +247,106 @@ local function handleTouch(x, y)
 
     x, y = c * x - s * y, s * x + c * y
 
+    -- 
     local i = math.floor(x / tileSize + MAPSIZE / 2) 
     local j = math.floor(y / tileSize + MAPSIZE / 2) 
 
     if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
-        special_text_to_draw_in_top_right_corner = tiles[i][j].terrain_type ..
-         "\nx:" .. i .. "\ny:" .. j 
+        -- special_text_to_draw_in_top_left_corner = tiles[i][j].terrain_type ..
+         -- "\nx:" .. i .. "\ny:" .. j 
+         ui.lines[1].substring = "tile: "..tiles[i][j].terrain_type
+         ui.lines[2].substring = "x:" .. i .. " y: " .. j
         -- tiles[i][j].substring = string.char(math.random(65, 90))
     end
 end
 
-special_text_to_draw_in_top_right_corner = ""
+
+
 -- Love2D callbacks
 function love.draw()
-    love.graphics.setColor(0, 1, 0)
-    love.graphics.print(special_text_to_draw_in_top_right_corner, 10, 10)
     local major, minor, revision, codename = love.getVersion()
     local str = string.format("Version %d.%d.%d - %s", major, minor, revision, codename)
+    love.graphics.setColor(0, 1, 0)
     love.graphics.print(str, 500, 20)
     love.graphics.setColor(1,1,1)
     love.graphics.draw(canvas) -- draw canvas onto screen
+
+    -- drawUI
+    if not ui.ishidden then
+        ui.draw()
+    end
+
+end
+-- love.graphics.rectangle( mode, x, y, width, height, rx, ry, segments )
+-- Arguments
+-- DrawMode mode ("fill" or "line")
+-- How to draw the rectangle.
+-- number x
+-- The position of top-left corner along the x-axis.
+-- number y
+-- The position of top-left corner along the y-axis.
+-- number width
+-- Width of the rectangle.
+-- number height
+-- Height of the rectangle.
+-- Available since LÖVE 0.10.0
+-- number rx (nil)
+-- The x-axis radius of each round corner. Cannot be greater than half the rectangle's width.
+-- number ry (rx)
+-- The y-axis radius of each round corner. Cannot be greater than half the rectangle's height.
+-- number segments (nil)
+-- The number of segments used for drawing the round corners. A default amount will be chosen if no number is given.
+-- 
+
+-- mouse functions
+function love.mousepressed(x, y, button)
+    handleTouch(x, y)
+    if button == 1 then -- left mouse button
+        isDragging = true
+        startX, startY = x, y
+        print("lmouse pressed")
+    end
+
 end
 
-function love.mousepressed(x, y)
-    handleTouch(x, y)
+function love.mousereleased(x, y, button)
+    if button == 1 then -- left mouse button
+        isDragging = false
+        print("lmouse released")
+    end
+end
+
+function love.mousemoved(x, y, dx, dy)
+    if isDragging then
+        local x, y = getTileAtCursor(x, y)
+        -- mouse is being dragged
+        -- do something with dx and dy
+        if x and y then
+            print("mouse moved " .. x .. ", " .. y)
+        end
+    end
 end
 
 function love.touchpressed(id, x, y)
     handleTouch(x, y)
+
+    isDragging = true
+    startX, startY = x, y
+    print("touch pressed")
+
+end
+
+function love.touchreleased(id, x, y)
+    isDragging = false
+    print("touch released")
+end
+
+function love.touchmoved(id, x, y, dx, dy)
+    if isDragging then
+        -- touch is being dragged
+        -- do something with dx and dy
+        print("touch moved")
+    end
 end
 
 function love.update(dt)
@@ -281,12 +362,12 @@ function love.update(dt)
     end
 
     if love.keyboard.isDown("up") then
-        print("up")
+        -- print("up")
         cameraY = math.floor(cameraY + cameraSpeed * dt)
         -- we use math.floor because otherwise text ui elements will be blurry
         drawMap()
     elseif love.keyboard.isDown("down") then
-        print("down")
+        -- print("down")
         cameraY = math.floor(cameraY - cameraSpeed * dt)
         -- we use math.floor because otherwise text ui elements will be blurry
         drawMap()
