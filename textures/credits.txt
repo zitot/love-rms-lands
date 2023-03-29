@@ -1,0 +1,12 @@
+all tiles should be 32x32 if i did this right. some are screenshots and some are actual tiles people made
+
+dirt tiles: https://opengameart.org/users/lamoot
+note, I just took screenshots and cropped to 32x32
+
+grass texture pack: https://opengameart.org/content/grass-texture-pack
+
+jungle from 32x32 screenshot from https://www.shutterstock.com/image-photo/tropical-jungles-southeast-asia-august-1827236333?id=1827236333&irclickid=SaD2ACwuVxyNTt83XsxgJXPRUkAWqgQVuRI2280&irgwc=1&utm_campaign=Jay%20Summet&utm_content=42119&utm_medium=Affiliate&utm_source=44834&utm_term=
+
+shallow from pebble in flowing water: http://www.burningwell.org/gallery/Landscapes/water/dsc05766
+
+rest of the images are from 32x32 screenshots of images from http://www.burningwell.org/ 
