@@ -1,3 +1,5 @@
+love.window.setTitle( "rms editor mockup v1")
+
 local rms = require "map"
 local ui = require "ui"
 
@@ -264,10 +266,10 @@ end
 
 -- Love2D callbacks
 function love.draw()
-    local major, minor, revision, codename = love.getVersion()
-    local str = string.format("Version %d.%d.%d - %s", major, minor, revision, codename)
-    love.graphics.setColor(0, 1, 0)
-    love.graphics.print(str, 500, 20)
+    -- local major, minor, revision, codename = love.getVersion()
+    -- local str = string.format("Version %d.%d.%d - %s", major, minor, revision, codename)
+    -- love.graphics.setColor(0, 1, 0)
+    -- love.graphics.print(str, 500, 20)
     love.graphics.setColor(1,1,1)
     love.graphics.draw(canvas) -- draw canvas onto screen
 
@@ -377,6 +379,6 @@ end
 
 
 function love.load()
-    
+    ui.setMapSize(MAPSIZE)
     drawMap() -- draw map onto screen
 end
