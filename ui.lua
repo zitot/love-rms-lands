@@ -6,7 +6,7 @@ ui.ishidden = false
 do
     ui.line_height = 14
     ui.lines = {}
-    ui.lines[1] = {substring = "TILE", color = {1,1,0},       }--y = ui.line_height * 1}
+    ui.lines[1] = {substring = "tile:", color = {1,1,0},       }--y = ui.line_height * 1}
     ui.lines[2] = {substring = "x:     y:   ", color = {1,1,1},       }--y = ui.line_height * 2}
     ui.lines[3] = {substring = "", color = {1,1,1},                   }--y = ui.line_height * 3}
     ui.lines[4] = {substring = "brush size", color = {0.7, 0.7, 0.5}, }--y = ui.line_height * 4}

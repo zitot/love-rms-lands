@@ -1,66 +1,27 @@
-love.window.setTitle( "rms editor mockup v1")
+love.window.setTitle( "rms paint mockup 1.1")
 
-local rms = require "map"
+local mainmap = require "mainmap"
 local ui = require "ui"
+local terrain = require "terrain"
 
-local MAPSIZE = 10 -- size of the map
-local tiles = {} -- table to store the tiles
-local tileSize = 32 -- size of each tile in pixels
-local angle = math.rad(-45) -- angle to rotate the map
+-- todo: map.lua
+local MAPSIZE = 36 -- size of the map
+-- local tiles = {} -- table to store the tiles
+-- local tileSize = 32 -- size of each tile in pixels
+-- local angle = math.rad(-45) -- angle to rotate the map
 
-local special_text_to_draw_in_top_left_corner = ""
-
-local brush_terrain_type = "GRASS"
+-- todo: brush.lua
+local base_terrain = "GRASS"
+local brush_terrain_type = "ICE"
 local brush_base_size = 1
 
-terrain_type_list = {
-    "GRASS", "GRASS2", "GRASS3", "DIRT", "DIRT2", "DIRT3", "WATER", "MED_WATER", "DEEP_WATER", "SHALLOW",
-    "FOREST", "JUNGLE", "BEACH", "DESERT", "ROAD", "ICE", "SNOW"
+local brush_sizes = {
+    "3x3", "5x5", "7x7", "none"
 }
 
-local MINIMAP_TERRAIN_COLORS = {
-    GRASS = {0.1, 0.79, 0.25},
-    GRASS2 = {0.1, 0.79, 0.25},
-    GRASS3 = {0.1, 0.79, 0.25},
-    DIRT = {0.54, 0.27, 0.07},
-    DIRT2 = {0.63, 0.32, 0.18},
-    DIRT3 = {0.79, 0.65, 0.36},
-    WATER = {0.0, 0.53, 0.74},
-    MED_WATER = {0.12, 0.56, 1.0},
-    DEEP_WATER = {0.0, 0.2, 0.4},
-    SHALLOW = {0.4, 1.0, 1.0},
-    FOREST = {0.13, 0.55, 0.13},
-    JUNGLE = {0.18, 0.73, 0.47},
-    ICE = {0.6, 1.0, 1.0},
-    SNOW = {1.0, 1.0, 1.0},
-    BEACH = {1.0, 1.0, 0}
-}
-
--- NOTE: Should I draw all these to a spritesheet? undecided
--- NOTE: loading images could slow down startup significantly. Should I wait until after the editor loads to start loading sprites in?
-local TERRAIN_SPRITES = {
-    GRASS = love.graphics.newImage("textures/grass_tile.jpg"),
-    GRASS2 = love.graphics.newImage("textures/grass2_tile.jpg"),
-    GRASS3 = love.graphics.newImage("textures/grass3_tile.jpg"),
-    DIRT = love.graphics.newImage("textures/dirt_tile.png"),
-    DIRT2 = love.graphics.newImage("textures/dirt2_tile.png"),
-    DIRT3 = love.graphics.newImage("textures/dirt3_tile.png"),
-    WATER = love.graphics.newImage("textures/water_tile.png"),
-    MED_WATER = love.graphics.newImage("textures/med_water_tile.png"),
-    DEEP_WATER = love.graphics.newImage("textures/deep_water_tile.png"),
-    SHALLOW = love.graphics.newImage("textures/shallow_tile.png"),
-    FOREST = love.graphics.newImage("textures/forest_tile.png"),
-    JUNGLE = love.graphics.newImage("textures/jungle_tile.png"),
-    ICE = love.graphics.newImage("textures/ice_tile.png"),
-    SNOW = love.graphics.newImage("textures/snow_tile.png"),
-    BEACH = love.graphics.newImage("textures/beach_tile.png"),
-}
-
--- if a nonexistent terrain is accessed, use black
-setmetatable(MINIMAP_TERRAIN_COLORS, {__index = function(t) return {1,0,0} end})
-
+-- todo: move to map.lua
 -- initialize the tiles
-for i = 1, MAPSIZE do
+--[[for i = 1, MAPSIZE do
     tiles[i] = {}
     for j = 1, MAPSIZE do
         tiles[i][j] = {terrain_type = "GRASS"}
@@ -83,7 +44,7 @@ tiles[2][3] = {terrain_type = "JUNGLE"}
 tiles[2][4] = {terrain_type = "ICE"}
 tiles[2][5] = {terrain_type = "SNOW"}
 tiles[2][6] = {terrain_type = "BEACH"}
-
+--]]
 function love.conf(t)
     t.console = true
     t.window.width = 2048
@@ -93,12 +54,13 @@ function love.conf(t)
 
 end
 
-local grid_state = "dashed" -- off, dashed, dotted, solid
-local cameraX = 0
-local cameraY = 0
-local cameraSpeed = 1000 -- pixels per second
+-- todo: get grid working in mainmap.lua
+-- local grid_state = "dashed" -- off, dashed, dotted, solid
+-- local cameraX = 0
+-- local cameraY = 0
+-- local cameraSpeed = 1000 -- pixels per second
 
-local canvas = love.graphics.newCanvas()
+-- local canvas = love.graphics.newCanvas()
 
 local function drawDashedLine(x1, y1, x2, y2, dashLength, gapLength)
     local dx = x2 - x1
@@ -117,91 +79,6 @@ local function drawDashedLine(x1, y1, x2, y2, dashLength, gapLength)
     end
 end
 
--- function to draw the map
-local function drawMap()
-    -- local textElements = {}
-
-    love.graphics.setCanvas(canvas) -- set canvas as active drawing target
-    love.graphics.clear() -- clear the canvas
-
-    -- perform drawing operations here
-    love.graphics.push()
-    -- NOTE: why am I translating to the camera now?? Doesn't this belong in love.draw()??
-    love.graphics.translate(cameraX, cameraY)
-    love.graphics.rotate(angle)
-
-    -- love.graphics.setLineWidth(2) -- set line width to 5 pixels
-    for i = 1, MAPSIZE do
-        for j = 1, MAPSIZE do
-            -- NOTE: why am i subtracting MAPSIZE / 2 from i? I don't recall, not at all
-            local x = (i - MAPSIZE / 2) * tileSize
-            local y = (j - MAPSIZE / 2) * tileSize
-
-            -- FIXME: Cannot use x = i*tileSize without screwing up touch coordinates
-            -- local x = i * tileSize
-            -- local y = j * tileSize
-            local terrain_type =  tiles[i][j].terrain_type
-            -- draw minimap
-            -- love.graphics.setColor(MINIMAP_TERRAIN_COLORS[terrain_type])
-            -- love.graphics.rectangle("fill", x, y, tileSize, tileSize) 
-
-            -- draw main view of map (with sprites and stuff)
-            -- NOTE: Is it more efficient to draw all our sprites to a REALLY big canvas and translate around that image 
-            -- or should I just draw those tiles that fit into the current window?
-            -- (I assume love2d doesn't waste computational power trying to render things out of window bounds)
-            -- let's be naive and draw the whole map it's not like my cpu/gpu cares
-
-            -- The origin is by default located at the top left corner of Image and Canvas objects
-            love.graphics.setColor(1,1,1)
-            local sprite = TERRAIN_SPRITES[terrain_type]
-            love.graphics.draw(sprite, x, y)
-        end
-    end
-
-    -- FIXME: Grid wont draw correctly
-    --[[
-    --draw top border
-    local x = 1 - MAPSIZE / 2 * tileSize
-    local endX = x + tileSize
-    local y = 0
-    love.graphics.setColor(1,0,0)
-    love.graphics.line(x, y, endX, y) 
-
-    local x = 2 - MAPSIZE / 2 * tileSize
-    local endX = x + tileSize
-    local y = 1 * tileSize
-    love.graphics.setColor(1,1,0)
-    love.graphics.line(x, y, endX, y) 
-
-    -- draw grid
-    local x = -20
-    local x2 = tileSize * MAPSIZE
-    local y2 = tileSize * MAPSIZE
-    love.graphics.setColor(1, 0.5, 0.5)
-
-    -- love.graphics.translate()
-    -- draw MAPSIZE rows (probably 1-0-0)
-    for row = 1, MAPSIZE do
-        if grid_state == "dashed" then
-            local y = tileSize * row
-            love.graphics.line(x, y, x2, y)
-            -- drawDashedLine(x, y, x2, y, 4, 2)
-        elseif grid_state == "dotted" then
-
-        elseif grid_state == "solid" then
-
-        elseif grid_state == "none" then
-
-        end
-
-    end
-    --]]
-
-
-
-    love.graphics.pop()
-    love.graphics.setCanvas() -- reset active drawing target to screen
-end
 
 local function paintTile(row,col)
     -- paint the tile at row,col
@@ -209,58 +86,58 @@ local function paintTile(row,col)
     neighbors = MAPSIZE --TODO: ?
 end
 
-local function getTileAtCursor(x, y, button)
-    local x = x - cameraX
-    local y = y - cameraY
-    local c = math.cos(-angle)
-    local s = math.sin(-angle)
+-- local function getTileAtCursor(x, y, button)
+--     local x = x - cameraX
+--     local y = y - cameraY
+--     local c = math.cos(-angle)
+--     local s = math.sin(-angle)
 
-    x, y = c * x - s * y, s * x + c * y
+--     x, y = c * x - s * y, s * x + c * y
 
-    -- 
-    local i = math.floor(x / tileSize + MAPSIZE / 2) 
-    local j = math.floor(y / tileSize + MAPSIZE / 2) 
+--     -- 
+--     local i = math.floor(x / tileSize + MAPSIZE / 2) 
+--     local j = math.floor(y / tileSize + MAPSIZE / 2) 
 
-    -- if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
-    --     special_text_to_draw_in_top_right_corner = tiles[i][j].terrain_type ..
-    --      "\nx:" .. i .. "\ny:" .. j 
-    --     -- tiles[i][j].substring = string.char(math.random(65, 90))
-    -- end
-    if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
-        return i, j
-    end
-end
+--     -- if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
+--     --     special_text_to_draw_in_top_right_corner = tiles[i][j].terrain_type ..
+--     --      "\nx:" .. i .. "\ny:" .. j 
+--     --     -- tiles[i][j].substring = string.char(math.random(65, 90))
+--     -- end
+--     if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
+--         return i, j
+--     end
+-- end
 
-local isDragging = false
-local startX, startY
+-- local isDragging = false
+-- local startX, startY
 
 -- function to handle touches and clicks
-local function handleTouch(x, y)
-    -- x = x - love.graphics.getWidth() / 2
-    -- y = y - love.graphics.getHeight() / 2
+-- local function handleTouch(x, y)
+--     -- x = x - love.graphics.getWidth() / 2
+--     -- y = y - love.graphics.getHeight() / 2
 
-    local x = x - cameraX
-    local y = y - cameraY
+--     local x = x - cameraX
+--     local y = y - cameraY
 
 
 
-    local c = math.cos(-angle)
-    local s = math.sin(-angle)
+--     local c = math.cos(-angle)
+--     local s = math.sin(-angle)
 
-    x, y = c * x - s * y, s * x + c * y
+--     x, y = c * x - s * y, s * x + c * y
 
-    -- 
-    local i = math.floor(x / tileSize + MAPSIZE / 2) 
-    local j = math.floor(y / tileSize + MAPSIZE / 2) 
+--     -- 
+--     local i = math.floor(x / tileSize + MAPSIZE / 2) 
+--     local j = math.floor(y / tileSize + MAPSIZE / 2) 
 
-    if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
-        -- special_text_to_draw_in_top_left_corner = tiles[i][j].terrain_type ..
-         -- "\nx:" .. i .. "\ny:" .. j 
-         ui.lines[1].substring = "tile: "..tiles[i][j].terrain_type
-         ui.lines[2].substring = "x:" .. i .. " y: " .. j
-        -- tiles[i][j].substring = string.char(math.random(65, 90))
-    end
-end
+--     if i >= 1 and i <= MAPSIZE and j >= 1 and j <= MAPSIZE then
+--         -- special_text_to_draw_in_top_left_corner = tiles[i][j].terrain_type ..
+--          -- "\nx:" .. i .. "\ny:" .. j 
+--          ui.lines[1].substring = "tile: "..tiles[i][j].terrain_type
+--          ui.lines[2].substring = "x:" .. i .. " y: " .. j
+--         -- tiles[i][j].substring = string.char(math.random(65, 90))
+--     end
+-- end
 
 
 
@@ -271,7 +148,7 @@ function love.draw()
     -- love.graphics.setColor(0, 1, 0)
     -- love.graphics.print(str, 500, 20)
     love.graphics.setColor(1,1,1)
-    love.graphics.draw(canvas) -- draw canvas onto screen
+    love.graphics.draw(mainmap.canvas) -- draw canvas onto screen
 
     -- drawUI
     if not ui.ishidden then
@@ -302,20 +179,21 @@ end
 
 -- mouse functions
 function love.mousepressed(x, y, button)
-    handleTouch(x, y)
-    if button == 1 then -- left mouse button
-        isDragging = true
-        startX, startY = x, y
-        print("lmouse pressed")
-    end
-
+    -- handleTouch(x, y)
+    -- if button == 1 then -- left mouse button
+    --     isDragging = true
+    --     startX, startY = x, y
+    --     print("lmouse pressed")
+    -- end
+    mainmap:mousepressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
-    if button == 1 then -- left mouse button
-        isDragging = false
-        print("lmouse released")
-    end
+    -- if button == 1 then -- left mouse button
+    --     isDragging = false
+    --     print("lmouse released")
+    -- end
+    mainmap:mousereleased(x, y, button)
 end
 
 function love.mousemoved(x, y, dx, dy)
@@ -327,58 +205,41 @@ function love.mousemoved(x, y, dx, dy)
             print("mouse moved " .. x .. ", " .. y)
         end
     end
+    mainmap:mousemoved(x, y, button)
 end
 
-function love.touchpressed(id, x, y)
-    handleTouch(x, y)
+-- todo: handle touches
+-- note: i am extremely unlikely to ever use touch interface in love2d with my iphone
+-- function love.touchpressed(id, x, y)
+--     handleTouch(x, y)
 
-    isDragging = true
-    startX, startY = x, y
-    print("touch pressed")
+--     isDragging = true
+--     startX, startY = x, y
+--     print("touch pressed")
 
-end
+-- end
 
-function love.touchreleased(id, x, y)
-    isDragging = false
-    print("touch released")
-end
+-- function love.touchreleased(id, x, y)
+--     isDragging = false
+--     print("touch released")
+-- end
 
-function love.touchmoved(id, x, y, dx, dy)
-    if isDragging then
-        -- touch is being dragged
-        -- do something with dx and dy
-        print("touch moved")
-    end
-end
+-- function love.touchmoved(id, x, y, dx, dy)
+--     if isDragging then
+--         -- touch is being dragged
+--         -- do something with dx and dy
+--         print("touch moved")
+--     end
+-- end
 
 function love.update(dt)
-    if love.keyboard.isDown("left") then
-        cameraX = math.floor(cameraX + cameraSpeed * dt)
-        -- we use math.floor because otherwise text ui elements will be blurry
-        drawMap() --FIXME: I should not be redrawing the map each frame
-                    -- TODO: decouple the translation of the camera from the drawing of the map
-    elseif love.keyboard.isDown("right") then
-        cameraX = math.floor(cameraX - cameraSpeed * dt)
-        -- we use math.floor because otherwise text ui elements will be blurry
-        drawMap()
-    end
-
-    if love.keyboard.isDown("up") then
-        -- print("up")
-        cameraY = math.floor(cameraY + cameraSpeed * dt)
-        -- we use math.floor because otherwise text ui elements will be blurry
-        drawMap()
-    elseif love.keyboard.isDown("down") then
-        -- print("down")
-        cameraY = math.floor(cameraY - cameraSpeed * dt)
-        -- we use math.floor because otherwise text ui elements will be blurry
-        drawMap()
-    end
+    mainmap:update(dt)
 end
 
 
 
 function love.load()
     ui.setMapSize(MAPSIZE)
-    drawMap() -- draw map onto screen
+    mainmap:init(MAPSIZE)
+    mainmap:draw() -- draw map onto screen
 end
