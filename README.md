@@ -2,6 +2,16 @@
 
 scenario like editor for land generation
 
+currently just a mockup of a ui and scrollable map
+
+Planned features:
+
+3x3, 5x5, 7x7 brush
+
+export to lua file (working file)
+
+export to aoe2 definitive edition random map script
+
 Requires love2d
 
 To run program without using .love file, call love . at the top level directory with main.lua and the textures folder. 
